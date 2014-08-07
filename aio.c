@@ -60,6 +60,13 @@ extern int kill(pid_t, int);
 extern int pselect(int, fd_set *, fd_set *, fd_set *, const struct timespec *, const sigset_t *);
 
 
+/* Enough for default systems. See /proc/sys/kernel/pid_max .
+ * The sys_clone() is using PID allocation functions to find next
+ * free TID, so gettid() should not return values larger than
+ * pid_max either. If you adjust your pid_max for whatever reason,
+ * make sure you do so here.
+ */
+
 static const int TID_MAX = 33000;
 static char __child_stack[4096];
 
