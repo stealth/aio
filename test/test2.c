@@ -1,5 +1,5 @@
 /* test module for aio implementation for lio_listio() */
-#include "aio.h"
+#include "../aio.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -33,7 +33,7 @@ int main()
 	struct sigaction sa;
 
 #ifdef ANDROID
-	if ((fd = open("/data/system/packages.xml", O_RDONLY)) < 0)
+	if ((fd = open("/etc/permissions/platform.xml", O_RDONLY)) < 0)
 #else
 	if ((fd = open("/etc/passwd", O_RDONLY)) < 0)
 #endif

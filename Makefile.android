@@ -17,13 +17,13 @@ odd: odd.o
 odd.o: odd.c
 	$(CC) $(CFLAGS) -c odd.c
 
-test: aio.o test.c test2.c
-	$(CC) $(CFLAGS) test.c aio.o -o test
-	$(CC) $(CFLAGS) test2.c aio.o -o test2
+test: aio.o test/test.o test/test2.o
+	$(CC) $(CFLAGS) test/test.c aio.o -o test/test
+	$(CC) $(CFLAGS) test/test2.c aio.o -o test/test2
 
 aio.o: aio.c
 	$(C99) $(CFLAGS) -c aio.c
 
 clean:
-	rm -rf aio.o
+	rm -rf aio.o test/test test/test2
 
