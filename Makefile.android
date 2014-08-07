@@ -9,7 +9,7 @@ CFLAGS=-Wall -O2 -DANDROID
 
 C99=$(CC) -std=c99
 
-all: aio.o odd
+all: aio.o
 
 odd: odd.o
 	$(CC) odd.o -o odd
