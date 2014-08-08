@@ -2,7 +2,7 @@
  * the io_ syscalls. This implementation is thread safe, although the standard
  * doesnt say anything about AIO and threads.
  *
- * (C) 2011 Sebastian Krahmer
+ * (C) 2011-2014 Sebastian Krahmer
  *
  * You may use this under the terms of the GPL.
  */
