@@ -398,7 +398,7 @@ int aio_cancel(int fd, struct aiocb *aiocbp)
 {
 	struct io_event result;
 	struct __ctx *c = NULL, **old_c = NULL, *c2 = NULL;
-	int r = AIO_CANCELED, sr = 0;
+	int r = AIO_NOTCANCELED, sr = 0, is_valid_fd = 0;
 	pid_t tid = 0;
 
 	while (__sync_fetch_and_add(&__init_lock, 0) != AIO_INITIALIZED)
@@ -416,11 +416,18 @@ int aio_cancel(int fd, struct aiocb *aiocbp)
 			return -1;
 		}
 		old_c = &__ctxs[tid];
-		r = AIO_ALLDONE;
+		r = AIO_CANCELED;
 		for (; c != NULL;) {
 			if (c->aio_fildes == fd) {
-				if ((sr = syscall(__NR_io_cancel, c->ctx_id, &c->iocb, &result) < 0)) {
-					r = AIO_NOTCANCELED;
+				is_valid_fd = 1;
+				if ((sr = syscall(__NR_io_cancel, c->ctx_id, &c->iocb, &result)) < 0) {
+					/* Also see below EINVAL check. And dont flip from AIO_NOTCANCELED back
+					 * to AIO_ALLDONE
+					 */
+					if (errno == EINVAL && r != AIO_NOTCANCELED)
+						r = AIO_ALLDONE;
+					else
+						r = AIO_NOTCANCELED;
 					old_c = &c->next;
 					c = c->next;
 				} else {
@@ -430,8 +437,17 @@ int aio_cancel(int fd, struct aiocb *aiocbp)
 					c = c->next;
 					free(c2);
 				}
-				__sync_synchronize();
+			} else {
+				old_c = &c->next;
+				c = c->next;
 			}
+		}
+		__sync_synchronize();
+
+		/* Found this fd at all? */
+		if (!is_valid_fd) {
+			r = -1;
+			errno = EBADF;
 		}
 	} else {
 		tid = aiocbp->tid;
@@ -439,12 +455,18 @@ int aio_cancel(int fd, struct aiocb *aiocbp)
 		old_c = &__ctxs[tid];
 		for (; c != NULL; c = c->next) {
 			if (c->ctx_id == aiocbp->ctx_id) {
-				if ((sr = syscall(__NR_io_cancel, c->ctx_id, &c->iocb, &result) < 0)) {
-					r = AIO_NOTCANCELED;
+				if ((sr = syscall(__NR_io_cancel, c->ctx_id, &c->iocb, &result)) < 0) {
+					/* syscall does not tell by return whether a ctx has already been finished
+					 * so we argue that since we control all ctx_id's the only cause for an EINVAL
+					 * could be that this ctx_id already succeeded and is therefor invalid
+					 */
+					if (errno == EINVAL)
+						r = AIO_ALLDONE;
 				} else {
 					syscall(__NR_io_destroy, c->ctx_id);
 					*old_c = c->next;
 					free(c);
+					r = AIO_CANCELED;
 				}
 				__sync_synchronize();
 				break;

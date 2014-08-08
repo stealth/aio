@@ -56,11 +56,15 @@ int main()
 		a[i].aio_sigevent.sigev_signo = SIGINT;
 		if (aio_read(&a[i]) < 0)
 			die("aio_read");
-		if (i % 3 == 0) {
-			e = aio_cancel(fd, &a[i]);
-			printf("cancel: %s\n", e == AIO_CANCELED ? "AIO_CANCELED" : (e == AIO_ALLDONE ? "AIO_ALLDONE" : "AIO_NOTCANCELED"));
-		}
 	}
+
+	e = aio_cancel(fd, NULL);
+	printf("cancel: %s\n", e == AIO_CANCELED ? "AIO_CANCELED" : (e == AIO_ALLDONE ? "AIO_ALLDONE" : "AIO_NOTCANCELED"));
+
+	/* cancel an invalid fd */
+	e = aio_cancel(7350, NULL);
+	printf("cancel: %d %s\n", e, strerror(errno));
+
 
 	printf("Requests submitted. Now fetching status...\n");
 	for (i = 0; i < st.st_size; ++i) {
